@@ -1,6 +1,7 @@
-numpy
-pandas
+numpy==1.23.5
+pandas==1.5.3
 pre-commit==3.3.3
-scipy
-tqdm
+scipy==1.10.0
+tqdm==4.64.1
 wfdb==4.1.2
+datasets==2.13.1
