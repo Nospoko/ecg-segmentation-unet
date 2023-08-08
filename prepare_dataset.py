@@ -6,6 +6,7 @@ import numpy as np
 import pandas as pd
 from tqdm import tqdm
 from scipy.ndimage import binary_dilation
+from datasets import Dataset, Features, Value, Array2D
 
 
 def create_save_path(path: str):
@@ -42,7 +43,10 @@ def create_mask(data: pd.DataFrame, dilation: int):
     return mask
 
 
-def process_file(path: str, save_dir: str, sequence_window: int = 1000, area_around_beat_ms: float = 100):
+def process_file(path: str, sequence_window: int = 1000, area_around_beat_ms: float = 100) -> list[dict[str, np.ndarray, np.ndarray]]:
+    # list that will contain of subsets of size sequence_window
+    records = []
+
     signals, adf, fields = load_ltafdb_record(path)
     # get file name
     filename = path.split("/")[-1]
@@ -64,22 +68,51 @@ def process_file(path: str, save_dir: str, sequence_window: int = 1000, area_aro
     data["mask"] = create_mask(data, dilation=dilation)
     data = data[["channel_1", "channel_2", "mask"]]
 
-    # create save dir if doesn't exist
-    create_save_path(save_dir)
-
-    for subset in tqdm(data.rolling(window=sequence_window, step=sequence_window)):
+    for subset in tqdm(data.rolling(window=sequence_window, step=sequence_window), desc=f"Processing {filename} file"):
+        # rolling sometimes creates subsets with shorter sequence length, they are filtered here
         if len(subset) != sequence_window:
             continue
 
-        # create save path
-        save_path = f"{save_dir}/file-{filename}-indices-{subset.index[0]}-{subset.index[-1]}.csv"
-        # write subset to save dir
-        subset.to_csv(save_path)
+        # record_id = f"file-{filename}-indices-{subset.index[0]}-{subset.index[-1]}.csv"
+
+        record = {
+            "record_id": filename,
+            # shape: [sequence_window, 2]
+            "signal": subset[["channel_1", "channel_2"]].astype("float32").values,
+            # shape: [sequence_window, 1]
+            "mask": subset[["mask"]].astype("int8").values,
+        }
+
+        records.append(record)
+
+    return records
 
 
 if __name__ == "__main__":
+    # get huggingface token from environment variables
+    token = os.environ["HUGGINGFACE_TOKEN"]
+
+    # hyperparameters
+    sequence_window = 1000
+    area_around_beat_ms = 100
+
     # That's where I'm downloading the LTAFDB data
     folder = "physionet.org/files/ltafdb/1.0.0/"
-    paths = ltafdb_paths(folder)
+    paths = ltafdb_paths(folder)[0:1]
 
-    process_file(path=paths[0], save_dir="dataset", sequence_window=1000, area_around_beat_ms=100)
+    records = []
+
+    for record_path in paths:
+        records += process_file(path=record_path, sequence_window=sequence_window, area_around_beat_ms=area_around_beat_ms)
+
+    # building huggingface dataset
+    features = Features(
+        {
+            "record_id": Value(dtype="string"),
+            "signal": Array2D(dtype="float32", shape=(sequence_window, 2)),
+            "mask": Array2D(dtype="int8", shape=(sequence_window, 1)),
+        }
+    )
+
+    dataset = Dataset.from_list(records, features=features)
+    dataset.push_to_hub("JasiekKaczmarczyk/physionet-preprocessed", token=token)
