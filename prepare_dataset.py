@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 from tqdm import tqdm
 from scipy.ndimage import binary_dilation
-from datasets import Dataset, Features, Value, Array2D
+from datasets import Value, Array2D, Dataset, Features
 
 
 def create_save_path(path: str):
@@ -43,7 +43,10 @@ def create_mask(data: pd.DataFrame, dilation: int):
     return mask
 
 
-def process_file(path: str, sequence_window: int = 1000, area_around_beat_ms: float = 100) -> list[dict[str, np.ndarray, np.ndarray]]:
+def process_file(
+    path: str, sequence_window: int = 1000, area_around_beat_ms: float = 100
+) -> list[dict[str, np.ndarray, np.ndarray]]:
+
     # list that will contain of subsets of size sequence_window
     records = []
 
