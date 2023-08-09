@@ -19,7 +19,7 @@ class MultiHeadAttention(nn.Module):
         self.head_dim = channels // heads
         self.embedding_size = channels
 
-        assert (self.head_dim * heads == channels), "Embedding size needs to be dividable by heads"
+        assert self.head_dim * heads == channels, "Embedding size needs to be dividable by heads"
 
         self.values_proj = nn.Conv1d(channels, channels, kernel_size=1, bias=False)
         self.keys_proj = nn.Conv1d(channels, channels, kernel_size=1, bias=False)
@@ -27,9 +27,7 @@ class MultiHeadAttention(nn.Module):
 
         self.out = nn.Conv1d(channels, channels, kernel_size=1)
 
-
     def forward(self, x: torch.Tensor):
-
         # applying linear projections
         q = self.queries_proj(x)
         k = self.keys_proj(x)
@@ -47,7 +45,7 @@ class MultiHeadAttention(nn.Module):
         qk = torch.einsum("n q h d, n k h d -> n h q k", [q, k])
 
         # applying softmax over key dimension to calculate attention scores
-        attn = torch.softmax(qk * (self.embedding_size ** -0.5), dim=3)
+        attn = torch.softmax(qk * (self.embedding_size**-0.5), dim=3)
 
         # shapes
         # attn: (N, heads, query_len, key_len)
@@ -59,4 +57,3 @@ class MultiHeadAttention(nn.Module):
         out = einops.rearrange(out, "n l h d -> n (h d) l")
 
         return self.out(out)
-

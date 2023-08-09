@@ -85,7 +85,7 @@ class Block(nn.Module):
 
 
 class ResnetBlock(nn.Module):
-    def __init__(self, in_dim: int, out_dim: int, *, kernel_size: int = 3,  groups: int = 8):
+    def __init__(self, in_dim: int, out_dim: int, *, kernel_size: int = 3, groups: int = 8):
         super().__init__()
 
         self.block_1 = Block(in_dim, out_dim, kernel_size=kernel_size, groups=groups)
@@ -93,7 +93,6 @@ class ResnetBlock(nn.Module):
         self.res_conv = nn.Conv1d(in_dim, out_dim, kernel_size=1) if in_dim != out_dim else nn.Identity()
 
     def forward(self, x: torch.Tensor):
-
         h = self.block_1(x)
         h = self.block_2(h)
 

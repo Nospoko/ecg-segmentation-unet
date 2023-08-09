@@ -2,18 +2,19 @@ import torch
 import torch.nn as nn
 
 from models.modules.attention_layers import MultiHeadAttention
-from models.modules.conv_layers import Residual, PreNorm, Upsample, Downsample, ResnetBlock
+from models.modules.conv_layers import PreNorm, Residual, Upsample, Downsample, ResnetBlock
 
 
 class Unet(nn.Module):
     def __init__(
-            self, in_channels: int, 
-            out_channels: int, 
-            dim: int, 
-            dim_mults: tuple[int] = (1, 2, 4, 8), 
-            kernel_size: int = 3, 
-            resnet_block_groups: int = 4
-        ):
+        self,
+        in_channels: int,
+        out_channels: int,
+        dim: int,
+        dim_mults: tuple[int] = (1, 2, 4, 8),
+        kernel_size: int = 3,
+        resnet_block_groups: int = 4,
+    ):
         super().__init__()
 
         # list of dimensions
@@ -82,7 +83,6 @@ class Unet(nn.Module):
         return up
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-
         # initial
         x = self.init_conv(x)
         r = x.clone()

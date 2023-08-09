@@ -1,3 +1,3 @@
-from models import modules, unet
+from models import unet, modules
 
 __all__ = ["modules", "unet"]
