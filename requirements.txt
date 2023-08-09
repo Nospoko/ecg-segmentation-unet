@@ -5,3 +5,4 @@ pre-commit==3.3.3
 scipy==1.10.0
 tqdm==4.64.1
 wfdb==4.1.2
+datasets==2.13.1

@@ -46,6 +46,7 @@ def create_mask(data: pd.DataFrame, dilation: int):
 def process_file(
     path: str, sequence_window: int = 1000, area_around_beat_ms: float = 100
 ) -> list[dict[str, np.ndarray, np.ndarray]]:
+
     # list that will contain of subsets of size sequence_window
     records = []
 
