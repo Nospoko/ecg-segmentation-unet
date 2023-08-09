@@ -2,4 +2,4 @@ physionet.org/
 tests
 dataset
 screenshots
-__pycache__
+*__pycache__*
