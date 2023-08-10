@@ -1,7 +1,8 @@
 import torch
 import einops
-from datasets import load_dataset, Features, Array2D, Value
 from torch.utils.data import Dataset
+from datasets import Value, Array2D, Features, load_dataset
+
 
 class ECGDataset(Dataset):
     def __init__(self, huggingface_path: str):

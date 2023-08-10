@@ -1,17 +1,16 @@
+import os
+
+import hydra
 import torch
+import wandb
+import torchmetrics
 import torch.nn as nn
 import torch.optim as optim
 import pytorch_lightning as pl
-import torchmetrics
-import wandb
-import hydra
-import os
-
+from omegaconf import OmegaConf
 from torch.utils.data import DataLoader, random_split
 from pytorch_lightning.loggers.wandb import WandbLogger
-from pytorch_lightning.callbacks import TQDMProgressBar, ModelCheckpoint
-
-from omegaconf import OmegaConf
+from pytorch_lightning.callbacks import ModelCheckpoint, TQDMProgressBar
 
 from models.unet import Unet
 from ecg_segmentation_dataset import ECGDataset
@@ -26,6 +25,7 @@ def intersection_over_union(input: torch.Tensor, target: torch.Tensor, threshold
 
     return iou
 
+
 class UnetTrainingWrapper(pl.LightningModule):
     def __init__(self, model: Unet, lr: float, weight_decay: float):
         super().__init__()
@@ -39,15 +39,14 @@ class UnetTrainingWrapper(pl.LightningModule):
         self.accuracy = torchmetrics.Accuracy(task="binary")
         self.f1_score = torchmetrics.F1Score("binary")
 
-
     def forward(self, x: torch.Tensor):
         return self.model(x)
-    
+
     def configure_optimizers(self) -> optim.Optimizer:
         optimizer = optim.AdamW(self.model.parameters(), lr=self.hparams["lr"], weight_decay=self.hparams["weight_decay"])
 
         return optimizer
-    
+
     def _step(self, batch: tuple[torch.Tensor, torch.Tensor], batch_idx: int):
         # extract signal and mask from batch
         signal, mask = batch
@@ -65,48 +64,23 @@ class UnetTrainingWrapper(pl.LightningModule):
         iou = intersection_over_union(mask_pred, mask)
 
         return loss, acc, f1, iou
-    
+
     def training_step(self, batch: tuple[torch.Tensor, torch.Tensor], batch_idx: int):
         loss, acc, f1, iou = self._step(batch, batch_idx)
 
-        self.log_dict(
-            {
-                "train/loss": loss,
-                "train/accuracy": acc,
-                "train/f1-score": f1,
-                "train/iou": iou
-            },
-            on_epoch=True
-        )
+        self.log_dict({"train/loss": loss, "train/accuracy": acc, "train/f1-score": f1, "train/iou": iou}, on_epoch=True)
 
         return loss
-    
+
     def validation_step(self, batch: tuple[torch.Tensor, torch.Tensor], batch_idx: int):
         loss, acc, f1, iou = self._step(batch, batch_idx)
 
-        self.log_dict(
-            {
-                "val/loss": loss,
-                "val/accuracy": acc,
-                "val/f1-score": f1,
-                "train/iou": iou
-            },
-            on_epoch=True
-        )
+        self.log_dict({"val/loss": loss, "val/accuracy": acc, "val/f1-score": f1, "train/iou": iou}, on_epoch=True)
 
     def test_step(self, batch: tuple[torch.Tensor, torch.Tensor], batch_idx: int):
         loss, acc, f1, iou = self._step(batch, batch_idx)
 
-        self.log_dict(
-            {
-                "test/loss": loss,
-                "test/accuracy": acc,
-                "test/f1-score": f1,
-                "train/iou": iou
-            },
-            on_epoch=True
-        )
-
+        self.log_dict({"test/loss": loss, "test/accuracy": acc, "test/f1-score": f1, "train/iou": iou}, on_epoch=True)
 
 
 def makedir_if_not_exists(dir: str):
@@ -142,7 +116,6 @@ def save_onnx_model(model: nn.Module, path: str):
 
 @hydra.main(config_path="configs", config_name="config-default", version_base="1.3.2")
 def train(cfg: OmegaConf):
-    
     # create dir if they don't exist
     makedir_if_not_exists(cfg.paths.log_dir)
     makedir_if_not_exists(cfg.paths.save_ckpt_dir)
@@ -170,22 +143,14 @@ def train(cfg: OmegaConf):
     )
 
     # lightning training wrapper
-    unet_wrapper = UnetTrainingWrapper(
-        unet, 
-        lr=cfg.hyperparameters.lr, 
-        weight_decay=cfg.hyperparameters.weight_decay
-    )
+    unet_wrapper = UnetTrainingWrapper(unet, lr=cfg.hyperparameters.lr, weight_decay=cfg.hyperparameters.weight_decay)
 
     # load checkpoint if specified
     if cfg.paths.load_ckpt_path is not None:
         unet_wrapper.load_from_checkpoint(checkpoint_path=cfg.paths.load_ckpt_path)
 
-    
     # callbacks
-    callbacks = [
-        TQDMProgressBar(), 
-        ModelCheckpoint(dirpath=cfg.paths.save_ckpt_dir, monitor="val/loss")
-    ]
+    callbacks = [TQDMProgressBar(), ModelCheckpoint(dirpath=cfg.paths.save_ckpt_dir, monitor="val/loss")]
 
     # initializing trainer with specified hyperparameters
     trainer = pl.Trainer(
@@ -199,11 +164,7 @@ def train(cfg: OmegaConf):
     )
 
     # run training
-    trainer.fit(
-        unet_wrapper,
-        train_dataloaders=train_dataloader,
-        val_dataloaders=val_dataloader
-    )
+    trainer.fit(unet_wrapper, train_dataloaders=train_dataloader, val_dataloaders=val_dataloader)
 
     # test model
     trainer.test(unet_wrapper, test_dataloader)

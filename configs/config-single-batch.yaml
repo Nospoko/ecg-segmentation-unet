@@ -2,8 +2,8 @@ hyperparameters:
   dataset_name: "roszcz/ecg-segmentation-ltafdb" # huggingface dataset
   batch_size: 16
   num_workers: 4
-  lr: 3e-4 
-  weight_decay: 0.01 
+  lr: 3e-4
+  weight_decay: 0.01
   num_epochs: 150
   accelerator: "gpu"
   precision: 16
