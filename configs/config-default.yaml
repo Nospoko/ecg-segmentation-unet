@@ -1,0 +1,28 @@
+hyperparameters:
+  dataset_name: "roszcz/ecg-segmentation-ltafdb" # huggingface dataset
+  batch_size: 256
+  num_workers: 8
+  lr: 3e-4 
+  weight_decay: 0.01 
+  num_epochs: 10
+  accelerator: "gpu"
+  precision: 16
+  overfit_batches: 0
+  dataset_split_seed: 0 # seed to make random_split deterministic
+
+paths:
+  save_ckpt_dir: "checkpoints" # directory where checkpoints will be saved
+  load_ckpt_path: null # if not None, specifies path to model state dict which will be loaded
+  log_dir: "logs"
+
+unet:
+  in_channels: 2 # image channels
+  out_channels: 1
+  kernel_size: 7
+  dim: 32 # initial number of unet channels (will be multiplied by dim_mults)
+  dim_mults: [1, 2, 4]
+  num_resnet_groups: 4
+
+logger:
+  run_name: run-${now:%Y-%m-%d-%H-%M}
+  log_every_n_steps: 50

@@ -1,5 +1,8 @@
 physionet.org/
 tests
-dataset
 screenshots
 *__pycache__*
+checkpoints
+onnx-models
+outputs
+logs
