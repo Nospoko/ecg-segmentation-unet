@@ -12,7 +12,6 @@ train:
   accelerator: "gpu"
   precision: 16
   overfit_batches: 1
-  dataset_split_seed: 0 # seed to make random_split deterministic
 
 paths:
   save_ckpt_dir: "checkpoints" # directory where checkpoints will be saved

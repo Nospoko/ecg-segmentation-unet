@@ -8,7 +8,7 @@ import torch.nn as nn
 import torch.optim as optim
 import pytorch_lightning as pl
 from omegaconf import OmegaConf
-from torch.utils.data import DataLoader, random_split
+from torch.utils.data import DataLoader
 from pytorch_lightning.loggers.wandb import WandbLogger
 from pytorch_lightning.callbacks import ModelCheckpoint, TQDMProgressBar
 
@@ -76,12 +76,12 @@ class UnetTrainingWrapper(pl.LightningModule):
     def validation_step(self, batch: tuple[torch.Tensor, torch.Tensor], batch_idx: int):
         loss, acc, f1, iou = self._step(batch, batch_idx)
 
-        self.log_dict({"val/loss": loss, "val/accuracy": acc, "val/f1-score": f1, "train/iou": iou}, on_epoch=True)
+        self.log_dict({"val/loss": loss, "val/accuracy": acc, "val/f1-score": f1, "val/iou": iou}, on_epoch=True)
 
     def test_step(self, batch: tuple[torch.Tensor, torch.Tensor], batch_idx: int):
         loss, acc, f1, iou = self._step(batch, batch_idx)
 
-        self.log_dict({"test/loss": loss, "test/accuracy": acc, "test/f1-score": f1, "train/iou": iou}, on_epoch=True)
+        self.log_dict({"test/loss": loss, "test/accuracy": acc, "test/f1-score": f1, "test/iou": iou}, on_epoch=True)
 
 
 def makedir_if_not_exists(dir: str):
@@ -89,8 +89,7 @@ def makedir_if_not_exists(dir: str):
         os.makedirs(dir)
 
 
-def preprocess_dataset(dataset_name: str, batch_size: int, num_workers: int, seed: int = 0):
-
+def preprocess_dataset(dataset_name: str, batch_size: int, num_workers: int):
     train_ds = ECGDataset(dataset_name, split="train")
     val_ds = ECGDataset(dataset_name, split="validation")
     test_ds = ECGDataset(dataset_name, split="test")
@@ -124,7 +123,6 @@ def train(cfg: OmegaConf):
         dataset_name=cfg.train.dataset_name,
         batch_size=cfg.train.batch_size,
         num_workers=cfg.train.num_workers,
-        seed=cfg.train.dataset_split_seed,
     )
 
     # logger

@@ -7,7 +7,7 @@ import numpy as np
 import pandas as pd
 from tqdm import tqdm
 from scipy.ndimage import binary_dilation
-from datasets import Value, Array2D, Dataset, DatasetDict, Features
+from datasets import Value, Array2D, Dataset, Features, DatasetDict
 
 
 def create_save_path(path: str):
@@ -146,15 +146,9 @@ if __name__ == "__main__":
     # dataset = Dataset.from_list(records, features=features)
     dataset = DatasetDict(
         {
-            "train": Dataset.from_list(
-                train_records, features=features
-            ),
-            "validation": Dataset.from_list(
-                val_records, features=features
-            ),
-            "test": Dataset.from_list(
-                test_records, features=features
-            ),
+            "train": Dataset.from_list(train_records, features=features),
+            "validation": Dataset.from_list(val_records, features=features),
+            "test": Dataset.from_list(test_records, features=features),
         }
     )
 

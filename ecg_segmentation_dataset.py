@@ -1,5 +1,4 @@
 import torch
-import einops
 from torch.utils.data import Dataset
 from datasets import Value, Array2D, Features, load_dataset
 
@@ -28,9 +27,9 @@ class ECGDataset(Dataset):
         mask = torch.tensor(record["mask"], dtype=torch.float32)
 
         item = {
-          "record_id": record["record_id"],
-          "signal": signal,
-          "mask": mask,
+            "record_id": record["record_id"],
+            "signal": signal,
+            "mask": mask,
         }
 
         return item
