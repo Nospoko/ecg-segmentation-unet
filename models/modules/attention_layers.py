@@ -9,7 +9,7 @@ class MultiHeadAttention(nn.Module):
         Multi Head Attention Layer
 
         Args:
-            embedding_size (int): size of embedding dim
+            channels (int): number of channels
             heads (int): number of attention heads
         """
 
@@ -19,7 +19,7 @@ class MultiHeadAttention(nn.Module):
         self.head_dim = channels // heads
         self.embedding_size = channels
 
-        assert self.head_dim * heads == channels, "Embedding size needs to be dividable by heads"
+        assert self.head_dim * heads == channels, "Channels needs to be dividable by heads"
 
         self.values_proj = nn.Conv1d(channels, channels, kernel_size=1, bias=False)
         self.keys_proj = nn.Conv1d(channels, channels, kernel_size=1, bias=False)
