@@ -1,4 +1,8 @@
-hyperparameters:
+hydra:
+  job:
+    chdir: False
+
+train:
   dataset_name: "roszcz/ecg-segmentation-ltafdb" # huggingface dataset
   batch_size: 16
   num_workers: 4

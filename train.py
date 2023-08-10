@@ -49,7 +49,8 @@ class UnetTrainingWrapper(pl.LightningModule):
 
     def _step(self, batch: tuple[torch.Tensor, torch.Tensor], batch_idx: int):
         # extract signal and mask from batch
-        signal, mask = batch
+        signal = batch["signal"]
+        mask = batch["mask"]
 
         mask_logits = self.model(signal)
 
@@ -89,13 +90,10 @@ def makedir_if_not_exists(dir: str):
 
 
 def preprocess_dataset(dataset_name: str, batch_size: int, num_workers: int, seed: int = 0):
-    dataset = ECGDataset(dataset_name)
 
-    # generator used to determine which records belong to which split
-    generator = torch.Generator().manual_seed(seed)
-
-    # spliting data based on seed
-    train_ds, val_ds, test_ds = random_split(dataset, [0.8, 0.1, 0.1], generator=generator)
+    train_ds = ECGDataset(dataset_name, split="train")
+    val_ds = ECGDataset(dataset_name, split="validation")
+    test_ds = ECGDataset(dataset_name, split="test")
 
     # dataloaders
     train_dataloader = DataLoader(train_ds, batch_size=batch_size, num_workers=num_workers)
@@ -123,10 +121,10 @@ def train(cfg: OmegaConf):
 
     # dataset
     train_dataloader, val_dataloader, test_dataloader = preprocess_dataset(
-        dataset_name=cfg.hyperparameters.dataset_name,
-        batch_size=cfg.hyperparameters.batch_size,
-        num_workers=cfg.hyperparameters.num_workers,
-        seed=cfg.hyperparameters.dataset_split_seed,
+        dataset_name=cfg.train.dataset_name,
+        batch_size=cfg.train.batch_size,
+        num_workers=cfg.train.num_workers,
+        seed=cfg.train.dataset_split_seed,
     )
 
     # logger
@@ -143,7 +141,7 @@ def train(cfg: OmegaConf):
     )
 
     # lightning training wrapper
-    unet_wrapper = UnetTrainingWrapper(unet, lr=cfg.hyperparameters.lr, weight_decay=cfg.hyperparameters.weight_decay)
+    unet_wrapper = UnetTrainingWrapper(unet, lr=cfg.train.lr, weight_decay=cfg.train.weight_decay)
 
     # load checkpoint if specified
     if cfg.paths.load_ckpt_path is not None:
@@ -156,10 +154,10 @@ def train(cfg: OmegaConf):
     trainer = pl.Trainer(
         logger=logger,
         callbacks=callbacks,
-        max_epochs=cfg.hyperparameters.num_epochs,
-        accelerator=cfg.hyperparameters.accelerator,
-        precision=cfg.hyperparameters.precision,
-        overfit_batches=cfg.hyperparameters.overfit_batches,
+        max_epochs=cfg.train.num_epochs,
+        accelerator=cfg.train.accelerator,
+        precision=cfg.train.precision,
+        overfit_batches=cfg.train.overfit_batches,
         log_every_n_steps=cfg.logger.log_every_n_steps,
     )
 
