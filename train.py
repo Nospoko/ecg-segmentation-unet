@@ -57,17 +57,17 @@ def save_onnx_model(model: nn.Module, path: str):
 
 
 def save_checkpoint(model: nn.Module, optimizer: optim.Optimizer, save_path: str):
-        # saving models
-        torch.save({"model": model.state_dict(), "optimizer": optimizer.state_dict()}, save_path)
+      # saving models
+      torch.save({"model": model.state_dict(), "optimizer": optimizer.state_dict()}, save_path)
 
 def step(
-        model: nn.Module,
-        batch: dict[str, torch.Tensor, torch.Tensor],
-        device: torch.device
-    ):
+    model: nn.Module,
+    batch: dict[str, torch.Tensor, torch.Tensor],
+    device: torch.device
+):
     # extract signal and mask from batch
-        signal = batch["signal"].to(device)
-        mask = batch["mask"].to(device)
+    signal = batch["signal"].to(device)
+    mask = batch["mask"].to(device)
 
         mask_logits = model(signal)
 
