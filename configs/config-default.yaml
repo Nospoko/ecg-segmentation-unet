@@ -8,9 +8,9 @@ train:
   num_workers: 8
   lr: 3e-4
   weight_decay: 0.01
-  num_epochs: 10
-  accelerator: "gpu"
-  precision: 16
+  num_epochs: 1
+  device: "cuda"
+  precision: "16-mixed"
   overfit_batches: 0
 
 paths:

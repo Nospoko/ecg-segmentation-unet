@@ -9,8 +9,8 @@ train:
   lr: 3e-4
   weight_decay: 0.01
   num_epochs: 150
-  accelerator: "gpu"
-  precision: 16
+  device: "cuda"
+  precision: "16-mixed"
   overfit_batches: 1
 
 paths:
