@@ -1,4 +1,5 @@
 import os
+import math
 from glob import glob
 
 import wfdb
@@ -6,7 +7,7 @@ import numpy as np
 import pandas as pd
 from tqdm import tqdm
 from scipy.ndimage import binary_dilation
-from datasets import Value, Array2D, Dataset, Features
+from datasets import Value, Array2D, Dataset, Features, DatasetDict
 
 
 def create_save_path(path: str):
@@ -46,7 +47,6 @@ def create_mask(data: pd.DataFrame, dilation: int):
 def process_file(
     path: str, sequence_window: int = 1000, area_around_beat_ms: float = 100
 ) -> list[dict[str, np.ndarray, np.ndarray]]:
-
     # list that will contain of subsets of size sequence_window
     records = []
 
@@ -80,15 +80,23 @@ def process_file(
 
         record = {
             "record_id": filename,
-            # shape: [sequence_window, 2]
-            "signal": subset[["channel_1", "channel_2"]].astype("float32").values,
-            # shape: [sequence_window, 1]
-            "mask": subset[["mask"]].astype("int8").values,
+            # shape: [2, sequence_window]
+            "signal": subset[["channel_1", "channel_2"]].astype("float32").values.T,
+            # shape: [1, sequence_window]
+            "mask": subset[["mask"]].astype("int8").values.T,
         }
 
         records.append(record)
 
     return records
+
+
+def split_in_two(filenames: list[str], split_ratio: float = 0.8) -> tuple[list[str], list[str]]:
+    ds_length = len(filenames)
+
+    split = math.ceil(split_ratio * ds_length)
+
+    return filenames[:split], filenames[split:]
 
 
 if __name__ == "__main__":
@@ -103,19 +111,46 @@ if __name__ == "__main__":
     folder = "physionet.org/files/ltafdb/1.0.0/"
     paths = ltafdb_paths(folder)[0:1]
 
-    records = []
+    # get name of file, this will be used for split
+    filenames = [path.split("/")[-1] for path in paths]
+
+    # creating split for train, val, test
+    train_filenames, val_test_filenames = split_in_two(filenames, split_ratio=0.8)
+    val_filenames, test_filenames = split_in_two(val_test_filenames, split_ratio=0.5)
+
+    train_records = []
+    val_records = []
+    test_records = []
 
     for record_path in paths:
-        records += process_file(path=record_path, sequence_window=sequence_window, area_around_beat_ms=area_around_beat_ms)
+        filename = record_path.split("/")[-1]
+
+        records = process_file(path=record_path, sequence_window=sequence_window, area_around_beat_ms=area_around_beat_ms)
+
+        if filename in train_filenames:
+            train_records += records
+        elif filename in val_filenames:
+            val_records += records
+        elif filename in test_filenames:
+            test_records += records
 
     # building huggingface dataset
     features = Features(
         {
             "record_id": Value(dtype="string"),
-            "signal": Array2D(dtype="float32", shape=(sequence_window, 2)),
-            "mask": Array2D(dtype="int8", shape=(sequence_window, 1)),
+            "signal": Array2D(dtype="float32", shape=(2, sequence_window)),
+            "mask": Array2D(dtype="int8", shape=(1, sequence_window)),
         }
     )
 
-    dataset = Dataset.from_list(records, features=features)
+    # dataset = Dataset.from_list(records, features=features)
+    dataset = DatasetDict(
+        {
+            "train": Dataset.from_list(train_records, features=features),
+            "validation": Dataset.from_list(val_records, features=features),
+            "test": Dataset.from_list(test_records, features=features),
+        }
+    )
+
+    # print(dataset["train"])
     dataset.push_to_hub("JasiekKaczmarczyk/physionet-preprocessed", token=token)
