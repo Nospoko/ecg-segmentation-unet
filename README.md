@@ -4,8 +4,8 @@ Custom 1D UNet for segmentation-based QRS detection. Data source: https://physio
 
 Processed dataset is available here: https://huggingface.co/datasets/roszcz/ecg-segmentation-ltafdb or you can run preprocessing yourself using ```python prepare_dataset.py```
 
-### Example outputs (model trained for 1 epoch):
-![ECG Segmentation](screenshots/model_trained_test_set.png)
+## Example outputs - Classification (model trained for 1 epoch):
+![ECG Classification](screenshots/model_trained_test_set.png)
 
 Left column - original mask (blue) and predicted mask (orange) \
 Right column - ECG signal (2 channels)
@@ -13,7 +13,21 @@ Right column - ECG signal (2 channels)
 ### Training
 To run training:
 ```sh
-python train.py --config-name <config>
+python train_binary_classification.py --config-name <config>
+```
+**--config-name** flag is used to specify config name, it needs to be in **configs** directory
+
+
+## Example outputs - Distribution modelling (model trained for 1 epoch):
+![ECG Modelling](screenshots/model_distribution_modelling_test_set.png)
+
+Left column - original mask (blue) and predicted mask (orange) \
+Right column - ECG signal (2 channels)
+
+### Training
+To run training:
+```sh
+python train_distribution_modelling.py --config-name <config>
 ```
 **--config-name** flag is used to specify config name, it needs to be in **configs** directory
 

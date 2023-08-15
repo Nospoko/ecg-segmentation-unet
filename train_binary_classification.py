@@ -5,11 +5,11 @@ import torch
 import wandb
 import torchmetrics
 import torch.nn as nn
-import torch.nn.functional as F
+from tqdm import tqdm
 import torch.optim as optim
+import torch.nn.functional as F
 from omegaconf import OmegaConf
 from torch.utils.data import DataLoader
-from tqdm import tqdm
 
 from models.unet import Unet
 from ecg_segmentation_dataset import ECGDataset
@@ -57,31 +57,28 @@ def save_onnx_model(model: nn.Module, path: str):
 
 
 def save_checkpoint(model: nn.Module, optimizer: optim.Optimizer, save_path: str):
-      # saving models
-      torch.save({"model": model.state_dict(), "optimizer": optimizer.state_dict()}, save_path)
+    # saving models
+    torch.save({"model": model.state_dict(), "optimizer": optimizer.state_dict()}, save_path)
 
-def step(
-    model: nn.Module,
-    batch: dict[str, torch.Tensor, torch.Tensor],
-    device: torch.device
-):
+
+def step(model: nn.Module, batch: dict[str, torch.Tensor, torch.Tensor], device: torch.device):
     # extract signal and mask from batch
     signal = batch["signal"].to(device)
     mask = batch["mask"].to(device)
 
-        mask_logits = model(signal)
+    mask_logits = model(signal)
 
-        # calculate loss
-        loss = F.binary_cross_entropy_with_logits(mask_logits, mask)
+    # calculate loss
+    loss = F.binary_cross_entropy_with_logits(mask_logits, mask)
 
-        # mask probabilities, used for calculating accuracy and f1 score
-        mask_pred = torch.sigmoid(mask_logits)
-        # calculate other metrics
-        acc = torchmetrics.functional.accuracy(mask_pred, mask, task="binary")
-        f1 = torchmetrics.functional.f1_score(mask_pred, mask, task="binary")
-        iou = intersection_over_union(mask_pred, mask)
+    # mask probabilities, used for calculating accuracy and f1 score
+    mask_pred = torch.sigmoid(mask_logits)
+    # calculate other metrics
+    acc = torchmetrics.functional.accuracy(mask_pred, mask, task="binary")
+    f1 = torchmetrics.functional.f1_score(mask_pred, mask, task="binary")
+    iou = intersection_over_union(mask_pred, mask)
 
-        return loss, acc, f1, iou
+    return loss, acc, f1, iou
 
 
 @hydra.main(config_path="configs", config_name="config-default", version_base="1.3.2")
@@ -139,7 +136,9 @@ def train(cfg: OmegaConf):
 
             if (batch_idx + 1) % cfg.logger.log_every_n_steps == 0:
                 # log metrics
-                wandb.log({"train/loss": loss, "train/accuracy": acc, "train/f1-score": f1, "train/iou": iou}, step=train_step_count)
+                wandb.log(
+                    {"train/loss": loss, "train/accuracy": acc, "train/f1-score": f1, "train/iou": iou}, step=train_step_count
+                )
 
                 # save model and optimizer states
                 save_checkpoint(unet, optimizer, save_path=save_path)
@@ -157,10 +156,7 @@ def train(cfg: OmegaConf):
             if (batch_idx + 1) % cfg.logger.log_every_n_steps == 0:
                 wandb.log({"val/loss": loss, "val/accuracy": acc, "val/f1-score": f1, "val/iou": iou}, step=val_step_count)
 
-
-
     # testing model
-
 
     wandb.finish()
 

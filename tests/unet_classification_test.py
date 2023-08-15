@@ -1,12 +1,12 @@
 import torch
-import matplotlib.pyplot as plt
-import seaborn as sns
-from torch.utils.data import DataLoader
 import torchmetrics
+import seaborn as sns
+import matplotlib.pyplot as plt
+from torch.utils.data import DataLoader
+from train import preprocess_dataset, intersection_over_union
 
 from models.unet import Unet
 from ecg_segmentation_dataset import ECGDataset
-from train import preprocess_dataset, intersection_over_union
 
 if __name__ == "__main__":
     # initializing model
@@ -45,7 +45,6 @@ if __name__ == "__main__":
         iou = intersection_over_union(pred_m[idx], m[idx])
         print(f"Sample {i} acc: {a}, f1: {f}, iou: {iou}")
 
-
         sns.lineplot(mask[idx, 0, :], ax=axes[i, 0])
         sns.lineplot(pred_m[idx, 0, :], alpha=0.8, ax=axes[i, 0])
         axes[i, 0].set_title("Mask")
@@ -53,9 +52,6 @@ if __name__ == "__main__":
         sns.lineplot(signal[idx, 0], ax=axes[i, 1])
         sns.lineplot(signal[idx, 1], ax=axes[i, 1])
         axes[i, 1].set_title("Signal")
-
-
-
 
     plt.tight_layout()
     plt.show()
