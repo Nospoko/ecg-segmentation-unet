@@ -1,5 +1,4 @@
 physionet.org/
-screenshots
 *__pycache__*
 checkpoints
 onnx-models
