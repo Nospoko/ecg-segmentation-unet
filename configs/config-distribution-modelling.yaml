@@ -3,6 +3,7 @@ hydra:
     chdir: False
 
 train:
+  task: "distribution-modelling"
   dataset_name: "roszcz/ecg-segmentation-ltafdb" # huggingface dataset
   batch_size: 128
   num_workers: 8
