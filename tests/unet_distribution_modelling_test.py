@@ -1,8 +1,8 @@
 import torch
 import seaborn as sns
 import matplotlib.pyplot as plt
-
 from huggingface_hub.file_download import hf_hub_download
+
 from models.unet import Unet
 from train import preprocess_dataset
 
@@ -10,8 +10,7 @@ if __name__ == "__main__":
     # initializing model
     checkpoint = torch.load(
         hf_hub_download(
-            repo_id="JasiekKaczmarczyk/ecg-segmentation-unet", 
-            filename="distribution-modelling-2023-08-14-11-23.ckpt"
+            repo_id="JasiekKaczmarczyk/ecg-segmentation-unet", filename="distribution-modelling-2023-08-14-11-23.ckpt"
         )
     )
 

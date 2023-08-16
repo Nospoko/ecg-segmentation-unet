@@ -2,8 +2,8 @@ import torch
 import torchmetrics
 import seaborn as sns
 import matplotlib.pyplot as plt
-
 from huggingface_hub.file_download import hf_hub_download
+
 from models.unet import Unet
 from train import preprocess_dataset
 from train_binary_classification import intersection_over_union
@@ -11,10 +11,7 @@ from train_binary_classification import intersection_over_union
 if __name__ == "__main__":
     # initializing model
     checkpoint = torch.load(
-        hf_hub_download(
-            repo_id="JasiekKaczmarczyk/ecg-segmentation-unet", 
-            filename="classification-2023-08-14-09-24.ckpt"
-        )
+        hf_hub_download(repo_id="JasiekKaczmarczyk/ecg-segmentation-unet", filename="classification-2023-08-14-09-24.ckpt")
     )
 
     cfg = checkpoint["config"]
