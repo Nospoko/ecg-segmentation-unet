@@ -2,14 +2,31 @@ import torch
 import seaborn as sns
 import matplotlib.pyplot as plt
 
+from huggingface_hub.file_download import hf_hub_download
 from models.unet import Unet
 from train import preprocess_dataset
 
 if __name__ == "__main__":
     # initializing model
-    ckpt = torch.load("checkpoints/distribution-modelling-2023-08-14-11-23.ckpt")
-    model = Unet(in_channels=2, out_channels=1, dim=32, dim_mults=(1, 2, 4), kernel_size=7, resnet_block_groups=4)
-    model.load_state_dict(ckpt["model"])
+    checkpoint = torch.load(
+        hf_hub_download(
+            repo_id="JasiekKaczmarczyk/ecg-segmentation-unet", 
+            filename="distribution-modelling-2023-08-14-11-23.ckpt"
+        )
+    )
+
+    cfg = checkpoint["config"]
+
+    model = Unet(
+        in_channels=cfg.unet.in_channels,
+        out_channels=cfg.unet.out_channels,
+        dim=cfg.unet.dim,
+        dim_mults=cfg.unet.dim_mults,
+        kernel_size=cfg.unet.kernel_size,
+        resnet_block_groups=cfg.unet.num_resnet_groups,
+    )
+
+    model.load_state_dict(checkpoint["model"])
 
     train_dataloader, val_dataloader, test_dataloader = preprocess_dataset("roszcz/ecg-segmentation-ltafdb", 128, 1)
 

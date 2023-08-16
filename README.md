@@ -31,6 +31,18 @@ python train_distribution_modelling.py --config-name <config>
 ```
 **--config-name** flag is used to specify config name, it needs to be in **configs** directory
 
+### Testing
+If you wish to test model you can run sample test scripts located tests directory.
+
+```sh
+python tests/unet_classification_test.py
+```
+or
+```sh
+python tests/unet_distribution_modelling_test.py
+```
+Both scripts use checkpoints that can be downloaded from Hugging Face: https://huggingface.co/JasiekKaczmarczyk/ecg-segmentation-unet
+
 ### Code Style
 
 This repository uses pre-commit hooks with forced python formatting ([black](https://github.com/psf/black),
