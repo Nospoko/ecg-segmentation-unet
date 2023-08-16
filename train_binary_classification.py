@@ -48,11 +48,6 @@ def step(model: nn.Module, batch: dict[str, torch.Tensor, torch.Tensor], device:
     f1 = torchmetrics.functional.f1_score(mask_pred, mask, task="binary")
     iou = intersection_over_union(mask_pred, mask)
 
-    metrics = {
-        f"{split}/loss": loss,
-        f"{split}/accuracy": acc, 
-        f"{split}/f1-score": f1, 
-        f"{split}/iou": iou
-    }
+    metrics = {f"{split}/loss": loss, f"{split}/accuracy": acc, f"{split}/f1-score": f1, f"{split}/iou": iou}
 
     return metrics

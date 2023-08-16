@@ -2,11 +2,10 @@ import torch
 import torchmetrics
 import seaborn as sns
 import matplotlib.pyplot as plt
-from torch.utils.data import DataLoader
-from train import preprocess_dataset, intersection_over_union
 
 from models.unet import Unet
-from ecg_segmentation_dataset import ECGDataset
+from train import preprocess_dataset
+from train_binary_classification import intersection_over_union
 
 if __name__ == "__main__":
     # initializing model

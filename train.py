@@ -11,7 +11,6 @@ from torch.utils.data import DataLoader
 
 from models.unet import Unet
 from ecg_segmentation_dataset import ECGDataset
-
 from train_binary_classification import step as step_bc
 from train_distribution_modelling import step as step_dm
 
@@ -46,7 +45,6 @@ def save_onnx_model(model: nn.Module, path: str):
 def save_checkpoint(model: nn.Module, optimizer: optim.Optimizer, cfg: OmegaConf, save_path: str):
     # saving models
     torch.save({"model": model.state_dict(), "optimizer": optimizer.state_dict(), "config": cfg}, save_path)
-
 
 
 @hydra.main(config_path="configs", config_name="config-default", version_base="1.3.2")
@@ -135,7 +133,6 @@ def train(cfg: OmegaConf):
 
             if (batch_idx + 1) % cfg.logger.log_every_n_steps == 0:
                 wandb.log(metrics, step=val_step_count)
-
 
     wandb.finish()
 

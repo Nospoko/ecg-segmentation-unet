@@ -16,7 +16,7 @@ def step(model: nn.Module, batch: dict[str, torch.Tensor, torch.Tensor], device:
     Returns:
         dict: loss and addictional metrics that will be logged
     """
-    
+
     # extract signal and mask from batch
     signal = batch["signal"].to(device)
     mask = batch["mask"].to(device)
@@ -26,8 +26,6 @@ def step(model: nn.Module, batch: dict[str, torch.Tensor, torch.Tensor], device:
     # calculate loss
     loss = F.mse_loss(prediction, mask)
 
-    metrics = {
-        f"{split}/loss": loss
-    }
+    metrics = {f"{split}/loss": loss}
 
     return metrics

@@ -1,10 +1,9 @@
 import torch
-import torchmetrics
 import seaborn as sns
 import matplotlib.pyplot as plt
 
 from models.unet import Unet
-from train_distribution_modelling import preprocess_dataset
+from train import preprocess_dataset
 
 if __name__ == "__main__":
     # initializing model
