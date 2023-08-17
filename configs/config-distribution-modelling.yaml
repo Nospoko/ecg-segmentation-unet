@@ -3,7 +3,7 @@ hydra:
     chdir: False
 
 train:
-  task: "binary-classification"
+  task: "distribution-modelling"
   dataset_name: "roszcz/ecg-segmentation-ltafdb" # huggingface dataset
   batch_size: 128
   num_workers: 8
@@ -11,8 +11,8 @@ train:
   weight_decay: 0.01
   num_epochs: 1
   device: "cuda"
-  precision: "16-mixed" # not implemented yet
-  overfit_batches: 0 # not implemented yet
+  precision: "16-mixed"
+  overfit_batches: 0
 
 paths:
   save_ckpt_dir: "checkpoints" # directory where checkpoints will be saved
@@ -29,5 +29,5 @@ unet:
   num_resnet_groups: 4
 
 logger:
-  run_name: run-${now:%Y-%m-%d-%H-%M}
+  run_name: distribution-modelling-${now:%Y-%m-%d-%H-%M}
   log_every_n_steps: 50

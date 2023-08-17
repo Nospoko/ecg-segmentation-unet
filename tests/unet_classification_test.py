@@ -1,18 +1,31 @@
 import torch
-import matplotlib.pyplot as plt
-import seaborn as sns
-from torch.utils.data import DataLoader
 import torchmetrics
+import seaborn as sns
+import matplotlib.pyplot as plt
+from huggingface_hub.file_download import hf_hub_download
 
 from models.unet import Unet
-from ecg_segmentation_dataset import ECGDataset
-from train import preprocess_dataset, intersection_over_union
+from train import preprocess_dataset
+from train_binary_classification import intersection_over_union
 
 if __name__ == "__main__":
     # initializing model
-    ckpt = torch.load("checkpoints/run-2023-08-14-09-24.ckpt")
-    model = Unet(in_channels=2, out_channels=1, dim=32, dim_mults=(1, 2, 4), kernel_size=7, resnet_block_groups=4)
-    model.load_state_dict(ckpt["model"])
+    checkpoint = torch.load(
+        hf_hub_download(repo_id="JasiekKaczmarczyk/ecg-segmentation-unet", filename="classification-2023-08-14-09-24.ckpt")
+    )
+
+    cfg = checkpoint["config"]
+
+    model = Unet(
+        in_channels=cfg.unet.in_channels,
+        out_channels=cfg.unet.out_channels,
+        dim=cfg.unet.dim,
+        dim_mults=cfg.unet.dim_mults,
+        kernel_size=cfg.unet.kernel_size,
+        resnet_block_groups=cfg.unet.num_resnet_groups,
+    )
+
+    model.load_state_dict(checkpoint["model"])
 
     acc = torchmetrics.Accuracy("binary")
     f1 = torchmetrics.F1Score("binary")
@@ -45,7 +58,6 @@ if __name__ == "__main__":
         iou = intersection_over_union(pred_m[idx], m[idx])
         print(f"Sample {i} acc: {a}, f1: {f}, iou: {iou}")
 
-
         sns.lineplot(mask[idx, 0, :], ax=axes[i, 0])
         sns.lineplot(pred_m[idx, 0, :], alpha=0.8, ax=axes[i, 0])
         axes[i, 0].set_title("Mask")
@@ -53,9 +65,6 @@ if __name__ == "__main__":
         sns.lineplot(signal[idx, 0], ax=axes[i, 1])
         sns.lineplot(signal[idx, 1], ax=axes[i, 1])
         axes[i, 1].set_title("Signal")
-
-
-
 
     plt.tight_layout()
     plt.show()

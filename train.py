@@ -3,30 +3,17 @@ import os
 import hydra
 import torch
 import wandb
-import torchmetrics
 import torch.nn as nn
-import torch.nn.functional as F
+from tqdm import tqdm
 import torch.optim as optim
 from omegaconf import OmegaConf
+from huggingface_hub import upload_file
 from torch.utils.data import DataLoader
-from tqdm import tqdm
 
 from models.unet import Unet
 from ecg_segmentation_dataset import ECGDataset
-
-
-def intersection_over_union(input: torch.Tensor, target: torch.Tensor, threshold: float = 0.5):
-    # input and target are probabilities of belonging to certain class
-    pred = input > threshold
-    mask = target > threshold
-
-    intersection = (pred & mask).sum()
-    union = (pred | mask).sum()
-
-    # if union is all zeros, it means signal was zeros and model predicted it well, so return 1
-    iou = intersection / union if union > 0 else 1
-
-    return iou
+from train_binary_classification import step as step_bc
+from train_distribution_modelling import step as step_dm
 
 
 def makedir_if_not_exists(dir: str):
@@ -56,32 +43,9 @@ def save_onnx_model(model: nn.Module, path: str):
     torch.onnx.export(model, dummy_input, path)
 
 
-def save_checkpoint(model: nn.Module, optimizer: optim.Optimizer, save_path: str):
-      # saving models
-      torch.save({"model": model.state_dict(), "optimizer": optimizer.state_dict()}, save_path)
-
-def step(
-    model: nn.Module,
-    batch: dict[str, torch.Tensor, torch.Tensor],
-    device: torch.device
-):
-    # extract signal and mask from batch
-    signal = batch["signal"].to(device)
-    mask = batch["mask"].to(device)
-
-        mask_logits = model(signal)
-
-        # calculate loss
-        loss = F.binary_cross_entropy_with_logits(mask_logits, mask)
-
-        # mask probabilities, used for calculating accuracy and f1 score
-        mask_pred = torch.sigmoid(mask_logits)
-        # calculate other metrics
-        acc = torchmetrics.functional.accuracy(mask_pred, mask, task="binary")
-        f1 = torchmetrics.functional.f1_score(mask_pred, mask, task="binary")
-        iou = intersection_over_union(mask_pred, mask)
-
-        return loss, acc, f1, iou
+def save_checkpoint(model: nn.Module, optimizer: optim.Optimizer, cfg: OmegaConf, save_path: str):
+    # saving models
+    torch.save({"model": model.state_dict(), "optimizer": optimizer.state_dict(), "config": cfg}, save_path)
 
 
 @hydra.main(config_path="configs", config_name="config-default", version_base="1.3.2")
@@ -99,7 +63,6 @@ def train(cfg: OmegaConf):
     )
 
     # logger
-    # logger = WandbLogger(project="ecg-segmentation-unet", name=cfg.logger.run_name, save_dir=cfg.paths.log_dir)
     wandb.init(project="ecg-segmentation-unet", name=cfg.logger.run_name, dir=cfg.paths.log_dir)
 
     device = torch.device(cfg.train.device)
@@ -114,20 +77,33 @@ def train(cfg: OmegaConf):
         resnet_block_groups=cfg.unet.num_resnet_groups,
     ).to(device)
 
+    # specify task
+    if cfg.train.task == "binary-classification":
+        step = step_bc
+    elif cfg.train.task == "distribution-modelling":
+        step = step_dm
+    else:
+        raise ValueError("No such task")
+
+    # setting up optimizer
     optimizer = optim.AdamW(unet.parameters(), lr=cfg.train.lr, weight_decay=cfg.train.weight_decay)
 
     # ckpt specifies directory and name of the file is name of the experiment in wandb
     save_path = f"{cfg.paths.save_ckpt_dir}/{cfg.logger.run_name}.ckpt"
 
+    # step counts for logging to wandb
     train_step_count = 0
     val_step_count = 0
 
     for epoch in range(cfg.train.num_epochs):
         # train epoch
-        train_loop = tqdm(enumerate(train_dataloader))
+        train_loop = tqdm(enumerate(train_dataloader), total=len(train_dataloader))
 
         for batch_idx, batch in train_loop:
-            loss, acc, f1, iou = step(unet, batch, device)
+            # metrics returns loss and additional metrics if specified in step function
+            metrics = step(unet, batch, device, split="train")
+
+            loss = metrics["train/loss"]
 
             optimizer.zero_grad()
             loss.backward()
@@ -139,35 +115,31 @@ def train(cfg: OmegaConf):
 
             if (batch_idx + 1) % cfg.logger.log_every_n_steps == 0:
                 # log metrics
-                wandb.log({"train/loss": loss, "train/accuracy": acc, "train/f1-score": f1, "train/iou": iou}, step=train_step_count)
+                wandb.log(metrics, step=train_step_count)
 
                 # save model and optimizer states
-                save_checkpoint(unet, optimizer, save_path=save_path)
+                save_checkpoint(unet, optimizer, cfg, save_path=save_path)
 
         # val epoch
-        val_loop = tqdm(enumerate(val_dataloader))
+        val_loop = tqdm(enumerate(val_dataloader), total=len(val_dataloader))
 
         for batch_idx, batch in val_loop:
-            loss, acc, f1, iou = step(unet, batch, device)
+            metrics = step(unet, batch, device, split="val")
+
+            loss = metrics["val/loss"]
 
             val_loop.set_postfix(loss=loss.item())
 
             val_step_count += 1
 
             if (batch_idx + 1) % cfg.logger.log_every_n_steps == 0:
-                wandb.log({"val/loss": loss, "val/accuracy": acc, "val/f1-score": f1, "val/iou": iou}, step=val_step_count)
+                wandb.log(metrics, step=val_step_count)
 
-
-
-    # testing model
-
+    if cfg.paths.hf_repo_id is not None:
+        # upload model to hugging face
+        upload_file(save_path, path_in_repo=f"{cfg.logger.run_name}.ckpt", repo_id=cfg.paths.hf_repo_id)
 
     wandb.finish()
-
-    # save onnx model and log to wandb
-    # onnx_save_path = f"onnx-models/model-{cfg.logger.run_name}.onnx"
-    # save_onnx_model(unet_wrapper.model, path=onnx_save_path)
-    # wandb.save(onnx_save_path)
 
 
 if __name__ == "__main__":

@@ -3,6 +3,7 @@ hydra:
     chdir: False
 
 train:
+  task: "binary-classification"
   dataset_name: "roszcz/ecg-segmentation-ltafdb" # huggingface dataset
   batch_size: 16
   num_workers: 4
@@ -17,6 +18,7 @@ paths:
   save_ckpt_dir: "checkpoints" # directory where checkpoints will be saved
   load_ckpt_path: null # if not None, specifies path to model state dict which will be loaded
   log_dir: "logs"
+  hf_repo_id: null # repo id to upload model to huggingface if null model is not uploaded
 
 unet:
   in_channels: 2 # image channels
