@@ -7,9 +7,9 @@ import torch.nn as nn
 from tqdm import tqdm
 import torch.optim as optim
 from omegaconf import OmegaConf
+from huggingface_hub import upload_file
 from torch.utils.data import DataLoader
 
-from huggingface_hub import upload_file
 from models.unet import Unet
 from ecg_segmentation_dataset import ECGDataset
 from train_binary_classification import step as step_bc
@@ -135,9 +135,10 @@ def train(cfg: OmegaConf):
             if (batch_idx + 1) % cfg.logger.log_every_n_steps == 0:
                 wandb.log(metrics, step=val_step_count)
 
-    # upload model to hugging face
-    upload_file(save_path, path_in_repo=f"{cfg.logger.run_name}.ckpt", repo_id=cfg.paths.hf_repo_id)
-    
+    if cfg.paths.hf_repo_id is not None:
+        # upload model to hugging face
+        upload_file(save_path, path_in_repo=f"{cfg.logger.run_name}.ckpt", repo_id=cfg.paths.hf_repo_id)
+
     wandb.finish()
 
 
