@@ -9,6 +9,7 @@ import torch.optim as optim
 from omegaconf import OmegaConf
 from torch.utils.data import DataLoader
 
+from huggingface_hub import upload_file
 from models.unet import Unet
 from ecg_segmentation_dataset import ECGDataset
 from train_binary_classification import step as step_bc
@@ -96,7 +97,7 @@ def train(cfg: OmegaConf):
 
     for epoch in range(cfg.train.num_epochs):
         # train epoch
-        train_loop = tqdm(enumerate(train_dataloader))
+        train_loop = tqdm(enumerate(train_dataloader), total=len(train_dataloader))
 
         for batch_idx, batch in train_loop:
             # metrics returns loss and additional metrics if specified in step function
@@ -120,7 +121,7 @@ def train(cfg: OmegaConf):
                 save_checkpoint(unet, optimizer, cfg, save_path=save_path)
 
         # val epoch
-        val_loop = tqdm(enumerate(val_dataloader))
+        val_loop = tqdm(enumerate(val_dataloader), total=len(val_dataloader))
 
         for batch_idx, batch in val_loop:
             metrics = step(unet, batch, device, split="val")
@@ -134,6 +135,9 @@ def train(cfg: OmegaConf):
             if (batch_idx + 1) % cfg.logger.log_every_n_steps == 0:
                 wandb.log(metrics, step=val_step_count)
 
+    # upload model to hugging face
+    upload_file(save_path, path_in_repo=f"{cfg.logger.run_name}.ckpt", repo_id=cfg.paths.hf_repo_id)
+    
     wandb.finish()
 
 
